@@ -1,14 +1,23 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
-# OSX GUI apps do not pick up environment variables the same way as Terminal apps and there are no easy solutions,
-# especially as Apple changes the GUI app behavior every release (see https://stackoverflow.com/q/135688/483528). As a
-# workaround to allow GitHub Desktop to work, add this (hopefully harmless) setting here.
-export PATH=$PATH:/usr/local/bin
+declare -a paths
 
-for file in "$@"; do
-  pushd "$(dirname "$file")" >/dev/null
-  terragrunt hclfmt --terragrunt-hclfmt-file "$(basename "$file")"
-  popd >/dev/null
+index=0
+
+for file_with_path in "$@"; do
+  file_with_path="${file_with_path// /__REPLACED__SPACE__}"
+
+  paths[index]=$(dirname "$file_with_path")
+
+  let "index+=1"
+done
+
+for path_uniq in $(echo "${paths[*]}" | tr ' ' '\n' | sort -u); do
+  path_uniq="${path_uniq//__REPLACED__SPACE__/ }"
+
+  pushd "$path_uniq" > /dev/null
+  terragrunt hclfmt
+  popd > /dev/null
 done
